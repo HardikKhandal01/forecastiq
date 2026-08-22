@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an Axios instance connecting to our FastAPI backend
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api',
+    baseURL: ' https://forecastiq-api-rcm3.onrender.com',
 });
 
 export const getSystemHealth = async () => {
