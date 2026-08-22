@@ -1,0 +1,40 @@
+# Python Virtual Environments
+.venv/
+.env/
+env/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Node / Frontend Build
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+notebooks/
+*.local
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Large Data & Binary Files (Avoid pushing raw heavy data to Git)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# OS Specific Files
+.DS_Store
+Thumbs.db
+forecastiq_local.db
