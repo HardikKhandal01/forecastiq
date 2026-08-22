@@ -20,17 +20,13 @@ app = FastAPI(
 )
 
 # Cross-Origin Resource Sharing (CORS) Configuration
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-]
-
+# Cross-Origin Resource Sharing (CORS) Configuration
+# Changed to ["*"] to allow Vercel Frontend to communicate with Render Backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], 
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
