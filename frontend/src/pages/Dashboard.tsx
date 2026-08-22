@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, LineChart, Line, Legend } from 'recharts';
-import { Activity, DollarSign, ShoppingCart, Users, Sparkles, Loader2, Server, AlertTriangle, TrendingDown, Sliders } from 'lucide-react';
+import { Sparkles, Loader2, Server, AlertTriangle, Sliders } from 'lucide-react';
 import { getForecast, getSystemHealth, getAnomalies, simulateScenario } from '../services/api';
 
 const Dashboard = () => {
