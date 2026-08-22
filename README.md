@@ -10,8 +10,8 @@
 ---
 
 ## 🚀 Live Links
-- **Frontend (Live Dashboard):** *(https://forecastiq-api-rcm3.onrender.com)*
-- **Backend (API Docs):** *(https://forecastiq-two.vercel.app/)*
+- **Backend (API Docs):** *(https://forecastiq-api-rcm3.onrender.com)*
+- **Frontend (Live Dashboard):** *(https://forecastiq-two.vercel.app/)*
 
 ---
 
