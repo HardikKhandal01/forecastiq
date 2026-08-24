@@ -1,23 +1,19 @@
-from backend.app.services.forecasting_service import ForecastService
+# Import the GLOBAL instance so everyone shares the exact same live data!
+from backend.app.api.routes.forecasting import forecast_service
 
 class WhatIfService:
-    def __init__(self):
-        # Baseline model ko load kar rahe hain
-        self.forecast_service = ForecastService()
+    # __init__ hata diya kyunki ab hum global forecast_service use karenge
 
     def simulate_scenario(self, days=30, marketing_boost_pct=0.0, price_discount_pct=0.0):
         """
         Simulates how business levers affect the baseline AI forecast.
         """
-        # 1. Get the normal AI baseline
-        baseline_forecast = self.forecast_service.predict_future(days=days)
+        # 1. Get the normal AI baseline using the CORRECT method name
+        baseline_forecast = forecast_service.get_predictions(days=days)
         
         # 2. Define Elasticity Rules (Real-world business logic)
-        # Assuming every 1% increase in marketing boosts sales by 0.5%
         marketing_multiplier = 1 + (marketing_boost_pct / 100) * 0.5 
         
-        # Assuming a 1% price discount increases volume by 1.5%, but reduces unit price
-        # Net revenue effect = (1 - discount) * (1 + 1.5 * discount)
         d = price_discount_pct / 100
         discount_multiplier = (1 - d) * (1 + 1.5 * d)
         
