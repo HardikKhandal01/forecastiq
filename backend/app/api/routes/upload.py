@@ -4,6 +4,8 @@ import io
 
 from backend.app.api.routes.forecasting import forecast_service
 from backend.app.api.routes.anomalies import anomaly_service
+# BUG FIX: Import what-if service taaki simulator bhi naye data par chale
+from backend.app.api.routes.what_if import what_if_service
 
 router = APIRouter()
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -38,13 +40,16 @@ async def upload_dataset(file: UploadFile = File(...)):
         if not date_col or not target_col:
             raise HTTPException(status_code=400, detail="Invalid columns. Need 1 Date and 1 Numeric column.")
 
-        # Standardize columns
-        df = df.rename(columns={date_col: 'Date', target_col: target_col})
+        # BUG FIX: Faltu columns delete karo aur AI logic ke liye internally target ko 'Total_Revenue' bana do
+        # (Frontend ko abhi bhi real name hi dikhega response ke zariye)
+        df = df[[date_col, target_col]]
+        df = df.rename(columns={date_col: 'Date', target_col: 'Total_Revenue'})
         df = df.sort_values('Date')
 
-        # Update Live Services In-Memory
+        # Update ALL Live Services In-Memory (Including What-If)
         forecast_service.df = df
         anomaly_service.df = df
+        what_if_service.df = df
         
         return {
             "status": "success",
