@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # 🔗 Naya Forecasting Route Import kiya hai
-from backend.app.api.routes import forecasting, anomalies, what_if
+from backend.app.api.routes import forecasting, anomalies, what_if, upload
 
 # Initialize FastAPI App with metadata for Swagger UI
 app = FastAPI(
@@ -42,6 +42,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(forecasting.router, prefix="/api/forecasting", tags=["Forecasting Models"])
 app.include_router(anomalies.router, prefix="/api/anomalies", tags=["Advanced Analytics"])
 app.include_router(what_if.router, prefix="/api/scenarios", tags=["What-If Analysis"])
+app.include_router(upload.router, prefix="/api/data", tags=["Data Ingestion"])
 @app.get("/", tags=["System"])
 async def root():
     """Root endpoint to check server availability."""

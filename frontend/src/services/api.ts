@@ -25,4 +25,16 @@ export const simulateScenario = async (days: number = 30, marketing: number = 0,
     return response.data;
 };
 
+// Add this at the bottom of the file
+export const uploadDataset = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/data/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
 export default api;
