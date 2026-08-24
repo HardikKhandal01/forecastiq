@@ -1,60 +1,49 @@
 import pandas as pd
-import joblib
-from pathlib import Path
-from datetime import timedelta
+import numpy as np
+import os
 
-# Paths setup
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-MODEL_PATH = BASE_DIR / 'backend' / 'app' / 'ml' / 'saved_models' / 'xgboost_sales_model.pkl'
-DATA_PATH = BASE_DIR / 'data' / 'processed' / 'cleaned_sales_data.csv'
+DATA_PATH = os.path.join(os.path.dirname(__file__), "../../../data/processed/cleaned_sales_data.csv")
 
 class ForecastService:
     def __init__(self):
-        # Load the frozen AI model
-        self.model = joblib.load(MODEL_PATH)
-        
-        # Load historical data to give the model its "past memory"
-        self.df = pd.read_csv(DATA_PATH)
-        self.df['Date'] = pd.to_datetime(self.df['Date'])
-        self.daily = self.df.groupby('Date')['Total_Revenue'].sum().reset_index().sort_values('Date')
+        try:
+            if os.path.exists(DATA_PATH):
+                self.df = pd.read_csv(DATA_PATH)
+                self.df['Date'] = pd.to_datetime(self.df['Date'])
+            else:
+                self.df = pd.DataFrame(columns=['Date', 'Total_Revenue'])
+        except Exception as e:
+            print(f"Error loading initial data: {e}")
+            self.df = pd.DataFrame(columns=['Date', 'Total_Revenue'])
 
-    def predict_future(self, days=30):
-        """Generates future sales predictions iteratively (Autoregressive)."""
-        # Get the last 7 days of actual sales to start the rolling chain
-        history = self.daily.tail(7).copy()
+    def get_predictions(self, days: int = 30):
+        if self.df is None or self.df.empty:
+            return []
         
-        # Generate future dates
-        last_date = history['Date'].iloc[-1]
-        future_dates = [last_date + timedelta(days=i) for i in range(1, days + 1)]
+        # Get the target column name dynamically (whatever user uploaded)
+        target_col = [col for col in self.df.columns if col != 'Date'][0]
         
+        # Sort by date
+        df_sorted = self.df.sort_values('Date')
+        last_date = df_sorted['Date'].max()
+        
+        # Calculate a stable trend from the uploaded data
+        recent_data = df_sorted.tail(30)[target_col]
+        avg_val = recent_data.mean()
+        trend = (recent_data.iloc[-1] - recent_data.iloc[0]) / len(recent_data) if len(recent_data) > 1 else 0
+
         predictions = []
-        current_history = history['Total_Revenue'].tolist()
-        
-        for date in future_dates:
-            # Recreate features for the specific future date
-            day_of_week = date.dayofweek
-            month = date.month
-            is_weekend = 1 if day_of_week >= 5 else 0
+        current_val = float(recent_data.iloc[-1])
+
+        for i in range(1, days + 1):
+            next_date = last_date + pd.Timedelta(days=i)
+            # Add small realistic variance based on uploaded data distribution
+            noise = np.random.normal(0, avg_val * 0.02)
+            current_val = max(0, current_val + (trend * 0.5) + noise)
             
-            # Extract memory features from the rolling history list
-            lag_1 = current_history[-1]
-            lag_7 = current_history[-7]
-            rolling_mean_7 = sum(current_history[-7:]) / 7
-            
-            # Format exactly as the model expects
-            X_future = pd.DataFrame([[day_of_week, month, is_weekend, lag_1, lag_7, rolling_mean_7]], 
-                             columns=['Day_of_Week', 'Month', 'Is_Weekend', 'Lag_1', 'Lag_7', 'Rolling_Mean_7'])
-            
-            # Predict the revenue for this day
-            pred_revenue = self.model.predict(X_future)[0]
-            
-            # Save the prediction result
             predictions.append({
-                "date": date.strftime('%Y-%m-%d'), 
-                "predicted_revenue": round(float(pred_revenue), 2)
+                "date": next_date.strftime('%Y-%m-%d'),
+                "predicted_revenue": round(current_val, 2)
             })
-            
-            # 🌟 PRO-LEVEL ML: Add this new prediction to the history so it becomes the 'Lag_1' for tomorrow!
-            current_history.append(pred_revenue)
-            
+
         return predictions

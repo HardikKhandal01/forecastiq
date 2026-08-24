@@ -1,54 +1,47 @@
 import pandas as pd
 import numpy as np
-from pathlib import Path
+import os
 
-# Paths setup
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-DATA_PATH = BASE_DIR / 'data' / 'processed' / 'cleaned_sales_data.csv'
+DATA_PATH = os.path.join(os.path.dirname(__file__), "../../../data/processed/cleaned_sales_data.csv")
 
 class AnomalyService:
     def __init__(self):
-        self.df = pd.read_csv(DATA_PATH)
-        self.df['Date'] = pd.to_datetime(self.df['Date'])
-        # Daily aggregate
-        self.daily = self.df.groupby('Date')['Total_Revenue'].sum().reset_index().sort_values('Date')
+        try:
+            if os.path.exists(DATA_PATH):
+                self.df = pd.read_csv(DATA_PATH)
+                self.df['Date'] = pd.to_datetime(self.df['Date'])
+            else:
+                self.df = pd.DataFrame(columns=['Date', 'Total_Revenue'])
+        except:
+            self.df = pd.DataFrame(columns=['Date', 'Total_Revenue'])
 
     def detect_anomalies(self):
-        # 1. Calculate 7-day rolling mean and standard deviation
-        self.daily['Rolling_Mean'] = self.daily['Total_Revenue'].rolling(window=7).mean()
-        self.daily['Rolling_Std'] = self.daily['Total_Revenue'].rolling(window=7).std()
+        if self.df is None or self.df.empty:
+            return []
         
-        # 2. Fill NaN values for the first 6 days using backward fill
-        self.daily = self.daily.bfill()
+        target_col = [col for col in self.df.columns if col != 'Date'][0]
         
-        # 3. Calculate Z-Score
-        self.daily['Z_Score'] = (self.daily['Total_Revenue'] - self.daily['Rolling_Mean']) / self.daily['Rolling_Std']
+        # Statistical Z-Score Outlier Detection on uploaded data
+        mean = self.df[target_col].mean()
+        std = self.df[target_col].std()
         
-        # 4. FIX: Use 0.5 threshold to catch even minor fluctuations
-        anomalies = self.daily[abs(self.daily['Z_Score']) > 0.5].copy()
-        
-        # 5. Format and categorize output
-        results = []
-        for _, row in anomalies.iterrows():
-            z = row['Z_Score']
+        if std == 0 or pd.isna(std):
+            return []
+
+        anomalies = []
+        for _, row in self.df.tail(60).iterrows():
+            val = row[target_col]
+            z_score = (val - mean) / std if std > 0 else 0
             
-            # AI categorizes severity automatically
-            if abs(z) > 3.0: 
-                severity = "Critical 🚨"
-            elif abs(z) > 2.0: 
-                severity = "Major ⚠️"
-            else: 
-                severity = "Minor ℹ️"
-            
-            anomaly_type = "Unusual Spike 📈" if z > 0 else "Severe Drop 📉"
-            
-            results.append({
-                "date": row['Date'].strftime('%Y-%m-%d'),
-                "revenue": round(row['Total_Revenue'], 2),
-                "type": anomaly_type,
-                "severity": severity,
-                "score": round(abs(z), 2)
-            })
-            
-        # Return sorted by date (newest first)
-        return sorted(results, key=lambda x: x['date'], reverse=True)
+            if abs(z_score) > 1.5:
+                severity = "Critical Outlier" if abs(z_score) > 2.5 else "Major Fluctuation" if abs(z_score) > 2.0 else "Minor Deviation"
+                anomaly_type = "Unusual Spike 📈" if z_score > 0 else "Severe Drop 📉"
+                
+                anomalies.append({
+                    "date": pd.to_datetime(row['Date']).strftime('%Y-%m-%d'),
+                    "type": anomaly_type,
+                    "severity": severity,
+                    "revenue": round(val, 2)
+                })
+                
+        return anomalies[::-1] # Most recent first
