@@ -7,7 +7,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   
-  // Dynamic Metric Name (Changes when new data is uploaded)
+  // Dynamic Metric Name
   const [metricName, setMetricName] = useState('Revenue');
 
   const [forecastData, setForecastData] = useState<any[]>([]);
@@ -18,18 +18,17 @@ const Dashboard = () => {
   const [marketingBoost, setMarketingBoost] = useState<number>(0);
   const [discount, setDiscount] = useState<number>(0);
   const [scenarioData, setScenarioData] = useState<any[]>([]);
+  
+  // FIXED: We will now properly use this variable in the UI below!
   const [scenarioSummary, setScenarioSummary] = useState<any>(null);
 
   useEffect(() => {
     getSystemHealth().then(() => setServerStatus('online')).catch(() => setServerStatus('offline'));
     fetchAnomalies();
 
-    // Listen for New Data Uploads!
     const handleDataUpdate = (e: any) => {
       const newTarget = e.detail?.targetName || 'Metric';
       setMetricName(newTarget);
-      
-      // Auto-refresh graphs with new data
       fetchAnomalies();
       handleGenerateForecast();
     };
@@ -62,7 +61,6 @@ const Dashboard = () => {
     } finally { setSimLoading(false); }
   };
 
-  // Helper function to format numbers cleanly (removes ₹ if it's not revenue/sales)
   const isCurrency = metricName.toLowerCase().includes('revenue') || metricName.toLowerCase().includes('sales');
   const formatValue = (val: number) => {
     if (val >= 1000000) return `${isCurrency ? '₹' : ''}${(val/1000000).toFixed(1)}M`;
@@ -123,7 +121,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* WHAT-IF SIMULATOR */}
-        <div className="lg:col-span-2 bg-brand-card p-4 md:p-6 rounded-xl border border-slate-800 overflow-hidden w-full">
+        <div className="lg:col-span-2 bg-brand-card p-4 md:p-6 rounded-xl border border-slate-800 overflow-hidden w-full flex flex-col">
           <div className="flex items-center gap-2 mb-6"><Sliders size={20} className="text-purple-400 shrink-0" /> <h2 className="text-lg font-bold text-white">Scenario Simulator</h2></div>
           
           <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
@@ -157,6 +155,16 @@ const Dashboard = () => {
               <div className="h-full flex items-center justify-center text-brand-muted text-center px-4">Run simulation to view scenarios.</div>
             )}
           </div>
+
+          {/* FIXED: Using the scenarioSummary variable here to show Net Impact */}
+          {scenarioSummary && (
+            <div className="mt-6 p-4 bg-slate-800/40 border border-slate-700 rounded-lg flex flex-wrap justify-between items-center gap-2">
+              <span className="text-brand-muted font-medium">Projected Net Impact:</span>
+              <span className={`font-bold text-lg ${scenarioSummary.net_impact >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {scenarioSummary.net_impact >= 0 ? '+' : ''}{isCurrency ? '₹' : ''}{Number(scenarioSummary.net_impact).toLocaleString()}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ANOMALIES */}
